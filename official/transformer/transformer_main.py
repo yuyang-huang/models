@@ -188,15 +188,15 @@ def get_train_op_and_metrics(loss, params):
     train_op = optimizer.apply_gradients(
         gradients, global_step=global_step, name="train")
 
-    metrics = {"learning_rate": learning_rate}
+    train_metrics = {"learning_rate": learning_rate}
 
     if not params["use_tpu"]:
       # gradient norm is not included as a summary when running on TPU, as
       # it can cause instability between the TPU and the host controller.
       gradient_norm = tf.global_norm(list(zip(*gradients))[0])
-      metrics["global_norm/gradient_norm"] = gradient_norm
+      train_metrics["global_norm/gradient_norm"] = gradient_norm
 
-    return train_op, metrics
+    return train_op, train_metrics
 
 
 def translate_and_compute_bleu(estimator, subtokenizer, bleu_source, bleu_ref):
@@ -231,6 +231,13 @@ def evaluate_and_log_bleu(estimator, bleu_source, bleu_ref, vocab_file):
   tf.logging.info("Bleu score (uncased):", uncased_score)
   tf.logging.info("Bleu score (cased):", cased_score)
   return uncased_score, cased_score
+
+
+def _validate_file(filepath):
+  """Make sure that file exists."""
+  if not tf.gfile.Exists(filepath):
+    raise tf.errors.NotFoundError(None, None, "File %s not found." % filepath)
+
 
 def run_loop(
     estimator, schedule_manager, train_hooks=None, benchmark_logger=None,
@@ -271,7 +278,14 @@ def run_loop(
   Raises:
     ValueError: if both or none of single_iteration_train_steps and
       single_iteration_train_epochs were defined.
+    NotFoundError: if the vocab file or bleu files don't exist.
   """
+  if bleu_source:
+    _validate_file(bleu_source)
+  if bleu_ref:
+    _validate_file(bleu_ref)
+  if vocab_file:
+    _validate_file(vocab_file)
 
   evaluate_bleu = bleu_source is not None and bleu_ref is not None
   if evaluate_bleu and schedule_manager.use_tpu:
@@ -439,20 +453,11 @@ def define_transformer_flags():
 
   @flags.multi_flags_validator(
       ["bleu_source", "bleu_ref"],
-      message="Files specified by --bleu_source and/or --bleu_ref don't exist. "
-              "Please ensure that the file paths are correct.")
+      message="Both or neither --bleu_source and --bleu_ref must be defined.")
   def _check_bleu_files(flags_dict):
-    """Validate files when bleu_source and bleu_ref are defined."""
-    if flags_dict["bleu_source"] is None or flags_dict["bleu_ref"] is None:
-      return True
-    return all([
-        tf.gfile.Exists(flags_dict["bleu_source"]),
-        tf.gfile.Exists(flags_dict["bleu_ref"])])
-
-  @flags.validator("vocab_file", "File set by --vocab_file does not exist.")
-  def _check_vocab_file(vocab_file):
-    """Ensure that vocab file exists."""
-    return tf.gfile.Exists(vocab_file)
+    """Validate that both or neither bleu_source and bleu_ref are defined."""
+    return (flags_dict["bleu_source"] is None) == (
+        flags_dict["bleu_ref"] is None)
 
   flags_core.require_cloud_storage(["data_dir", "model_dir"])
 
