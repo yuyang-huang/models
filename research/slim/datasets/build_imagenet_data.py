@@ -97,15 +97,11 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
 
-tf.app.flags.DEFINE_string('train_directory', '/tmp/',
-                           'Training data directory')
 tf.app.flags.DEFINE_string('validation_directory', '/tmp/',
                            'Validation data directory')
 tf.app.flags.DEFINE_string('output_directory', '/tmp/',
                            'Output data directory')
 
-tf.app.flags.DEFINE_integer('train_shards', 1024,
-                            'Number of shards in training TFRecord files.')
 tf.app.flags.DEFINE_integer('validation_shards', 128,
                             'Number of shards in validation TFRecord files.')
 
@@ -682,8 +678,6 @@ def _build_bounding_box_lookup(bounding_box_file):
 
 
 def main(unused_argv):
-  assert not FLAGS.train_shards % FLAGS.num_threads, (
-      'Please make the FLAGS.num_threads commensurate with FLAGS.train_shards')
   assert not FLAGS.validation_shards % FLAGS.num_threads, (
       'Please make the FLAGS.num_threads commensurate with '
       'FLAGS.validation_shards')
@@ -696,8 +690,6 @@ def main(unused_argv):
   # Run it!
   _process_dataset('validation', FLAGS.validation_directory,
                    FLAGS.validation_shards, synset_to_human, image_to_bboxes)
-  _process_dataset('train', FLAGS.train_directory, FLAGS.train_shards,
-                   synset_to_human, image_to_bboxes)
 
 
 if __name__ == '__main__':

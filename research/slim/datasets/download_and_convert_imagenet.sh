@@ -45,9 +45,7 @@
 # downloading the raw images.
 #
 # usage:
-#  cd research/slim
-#  bazel build :download_and_convert_imagenet
-#  ./bazel-bin/download_and_convert_imagenet.sh [data-dir]
+#  ./download_and_convert_imagenet.sh research/slim
 set -e
 
 if [ -z "$1" ]; then
@@ -56,11 +54,11 @@ if [ -z "$1" ]; then
 fi
 
 # Create the output and temporary directories.
-DATA_DIR="${1%/}"
+WORK_DIR="${1%/}"
+DATA_DIR="${WORK_DIR}/datasets/imagenet_2012"
 SCRATCH_DIR="${DATA_DIR}/raw-data/"
 mkdir -p "${DATA_DIR}"
 mkdir -p "${SCRATCH_DIR}"
-WORK_DIR="$0.runfiles/__main__"
 
 # Download the ImageNet data.
 LABELS_FILE="${WORK_DIR}/datasets/imagenet_lsvrc_2015_synsets.txt"
@@ -68,7 +66,6 @@ DOWNLOAD_SCRIPT="${WORK_DIR}/datasets/download_imagenet.sh"
 "${DOWNLOAD_SCRIPT}" "${SCRATCH_DIR}" "${LABELS_FILE}"
 
 # Note the locations of the train and validation data.
-TRAIN_DIRECTORY="${SCRATCH_DIR}train/"
 VALIDATION_DIRECTORY="${SCRATCH_DIR}validation/"
 
 # Preprocess the validation data by moving the images into the appropriate
@@ -95,7 +92,6 @@ OUTPUT_DIRECTORY="${DATA_DIR}"
 IMAGENET_METADATA_FILE="${WORK_DIR}/datasets/imagenet_metadata.txt"
 
 "${BUILD_SCRIPT}" \
-  --train_directory="${TRAIN_DIRECTORY}" \
   --validation_directory="${VALIDATION_DIRECTORY}" \
   --output_directory="${OUTPUT_DIRECTORY}" \
   --imagenet_metadata_file="${IMAGENET_METADATA_FILE}" \

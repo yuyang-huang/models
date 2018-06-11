@@ -71,29 +71,3 @@ cd "${OUTDIR}/.."
 echo "Downloading ${VALIDATION_TARBALL} to ${OUTPUT_PATH}."
 wget -nd -c "${BASE_URL}/${VALIDATION_TARBALL}"
 tar xf "${VALIDATION_TARBALL}" -C "${OUTPUT_PATH}"
-
-# Download all images from the ImageNet 2012 train dataset.
-TRAIN_TARBALL="ILSVRC2012_img_train.tar"
-OUTPUT_PATH="${OUTDIR}train/"
-mkdir -p "${OUTPUT_PATH}"
-cd "${OUTDIR}/.."
-echo "Downloading ${TRAIN_TARBALL} to ${OUTPUT_PATH}."
-wget -nd -c "${BASE_URL}/${TRAIN_TARBALL}"
-
-# Un-compress the individual tar-files within the train tar-file.
-echo "Uncompressing individual train tar-balls in the training data."
-
-while read SYNSET; do
-  echo "Processing: ${SYNSET}"
-
-  # Create a directory and delete anything there.
-  mkdir -p "${OUTPUT_PATH}/${SYNSET}"
-  rm -rf "${OUTPUT_PATH}/${SYNSET}/*"
-
-  # Uncompress into the directory.
-  tar xf "${TRAIN_TARBALL}" "${SYNSET}.tar"
-  tar xf "${SYNSET}.tar" -C "${OUTPUT_PATH}/${SYNSET}/"
-  rm -f "${SYNSET}.tar"
-
-  echo "Finished processing: ${SYNSET}"
-done < "${SYNSETS_FILE}"
